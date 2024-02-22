@@ -1,23 +1,4 @@
 // if you have package write it there
-
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.RandomAccessFile;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.nio.file.attribute.FileAttribute;
-import java.nio.file.attribute.PosixFilePermission;
-import java.nio.file.attribute.PosixFilePermissions;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Scanner;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-
-import org.bukkit.Bukkit;
-
 /**
  * 
  * GNU GENERAL PUBLIC LICENSE
@@ -608,6 +589,27 @@ import org.bukkit.Bukkit;
  * License instead of this License. But first, please read
  * <https://www.gnu.org/licenses/why-not-lgpl.html>.
  * 
+ */
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.attribute.FileAttribute;
+import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.PosixFilePermissions;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Scanner;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+
+import org.bukkit.Bukkit;
+
+/**
  * 
  * @author shayegan8
  */
