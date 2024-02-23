@@ -1,4 +1,3 @@
-// if you have package write it there
 /**
  * 
  * GNU GENERAL PUBLIC LICENSE
@@ -589,37 +588,26 @@
  * License instead of this License. But first, please read
  * <https://www.gnu.org/licenses/why-not-lgpl.html>.
  * 
- */
-
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.RandomAccessFile;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.nio.file.attribute.FileAttribute;
-import java.nio.file.attribute.PosixFilePermission;
-import java.nio.file.attribute.PosixFilePermissions;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Scanner;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-
-import org.bukkit.Bukkit;
-
-/**
  * 
  * @author shayegan8
  */
+
+import java.io.FileWriter;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+
 public class PropertiesAPI {
 
 	private static List<String> secretList;
-	private static FileAttribute<Set<PosixFilePermission>> attribute = PosixFilePermissions
-			.asFileAttribute(PosixFilePermissions.fromString("rw-r--r--"));
 	private static String alphabets[] = { "a", "b", "c", "d", "e", "f", "g", "h", "i", "k", "j", "l", "m", "n", "o",
 			"p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z" };
+	private static final String SPLITOR = "@";
+	private static final String LIST_SPLITOR = " - ";
 
 	public static List<String> getSecretList() {
 		return secretList;
@@ -630,232 +618,181 @@ public class PropertiesAPI {
 	}
 
 	public static int getByID(String str, String fileName) {
-		int n = 0;
-		while (n < readAllLines(fileName).size()) {
-			if (readAllLines(fileName).get(n).equalsIgnoreCase(str)) {
-				return n;
-			}
-			n++;
-		}
-		return -1;
-	}
+		return CompletableFuture.supplyAsync(() -> {
+			int n = 0;
 
-	public static List<String> readAllLines(String configFile) {
-		List<String> lines = new ArrayList<>();
-		try (Scanner reader = new Scanner(new File(configFile))) {
-			while (reader.hasNextLine()) {
-				lines.add(reader.nextLine());
+			try {
+				while (n < Files.readAllLines(Paths.get(fileName)).size()) {
+					if (Files.readAllLines(Paths.get(fileName)).get(n).equalsIgnoreCase(str)) {
+						return n;
+					}
+					n++;
+				}
+			} catch (IOException e) {
+				e.printStackTrace();
 			}
-		} catch (FileNotFoundException e) {
-			return null;
-		}
-		return lines;
-	}
-
-	public PropertiesAPI() {
-		if (secretList == null)
-			secretList = readAllLines("plugins/auth/config.dcnf");
+			return -1;
+		}).join();
 	}
 
 	public static String[] getAlphabets() {
 		return PropertiesAPI.alphabets;
 	}
 
-	public void setListProperties(String key, String fileName, String... args) {
-		if (Files.notExists(Paths.get(fileName))) {
-			try {
-				Files.createFile(Paths.get(fileName), attribute);
+	public static void setListProperties(String key, String fileName, String... args) {
+		CompletableFuture.runAsync(() -> {
+
+			int i = 0;
+
+			try (FileWriter writer = new FileWriter(fileName, true)) {
+				writer.write("\n" + "* " + key + "\n");
+				while (i < args.length) {
+					writer.write(i + LIST_SPLITOR + args[i] + "\n");
+					writer.flush();
+					i++;
+				}
+				writer.write("* endif " + key);
+				writer.flush();
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
-		}
-
-		Bukkit.getScheduler().runTaskAsynchronously(SAuth.getInstance(), () -> {
-
-			int i = 0;
-
-			try (FileWriter writer = new FileWriter(fileName, true)) {
-				writer.write("* " + key + "\n");
-				while (i < args.length) {
-					writer.write(i + " - " + args[i] + "\n");
-					writer.flush();
-					i++;
-				}
-				writer.write("* endif " + key + "\n");
-				writer.flush();
-			} catch (IOException e) {
-				throw new IllegalStateException("a problem with creating properties list, file not found\n" + e);
-			}
 		});
+
 	}
 
-	public void setListProperties(String key, String fileName, List<String> args) {
-		Bukkit.getScheduler().runTaskAsynchronously(SAuth.getInstance(), () -> {
-			if (Files.notExists(Paths.get(fileName))) {
-				try {
-					Files.createFile(Paths.get(fileName), attribute);
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			}
+	public static void setListProperties(String key, String fileName, List<String> args) {
+		CompletableFuture.runAsync(() -> {
+
 			int i = 0;
 
 			try (FileWriter writer = new FileWriter(fileName, true)) {
-				writer.write("* " + key + "\n");
+				writer.write("\n" + "* " + key + "\n");
 				while (i < args.size()) {
-					writer.write(i + " - " + args.get(i) + "\n");
+					writer.write(i + LIST_SPLITOR + args.get(i) + "\n");
 					writer.flush();
 					i++;
 				}
-				writer.write("* endif " + key + "\n");
+				writer.write("* endif " + key);
 				writer.flush();
 			} catch (IOException e) {
-				throw new IllegalStateException("a problem with creating properties list, file not found\n" + e);
+				e.printStackTrace();
 			}
+
 		});
 	}
 
-	public List<String> getListProperties(String key, String fileName, String... defaultValues) {
-		CompletableFuture<Boolean> bool = new CompletableFuture<Boolean>();
-		CompletableFuture<List<String>> result = new CompletableFuture<List<String>>();
-		Bukkit.getScheduler().runTaskAsynchronously(instance, () -> {
-			setSecretList(readAllLines(fileName));
+	public static void setProperties(String key, String value, String fileName) {
+		CompletableFuture.runAsync(() -> {
 
-			if (!getSecretList().contains("*" + key) || getSecretList() == null)
-				bool.complete(true);
-
-			if (bool.join()) {
-
-				List<String> process = getListPropertiesProcess1(key, fileName, defaultValues);
-				result.complete(process);
+			try (FileWriter writer = new FileWriter(fileName, true)) {
+				writer.write("\n" + key + SPLITOR + value + "\n");
+				writer.flush();
+			} catch (IOException e) {
+				e.printStackTrace();
 			}
-			if (result.join() == null) {
-				List<String> process = getListPropertiesProcess2(key, fileName);
-				result.complete(process);
-			}
+
 		});
-
-		return result.join();
 	}
 
-	private List<String> getListPropertiesProcess1(String key, String fileName, String... defaultValues) {
-		List<String> ls = new ArrayList<>();
-		for (int n = 0; n < defaultValues.length; n++) {
-			if (defaultValues[n].contains("&")) {
-				String jende = ((String) defaultValues[n]).replaceAll("&", "§");
-				ls.add(jende);
-			} else {
-				ls.add(defaultValues[n]);
+	public static List<String> getListProperties(String key, String fileName, String... defaultValues) {
+		return CompletableFuture.supplyAsync(() -> {
+			if (getSecretList().size() == 0 && defaultValues != null) {
+				return Arrays.asList(defaultValues);
 			}
-		}
-		return ls;
+
+			return getListPropertiesProcess(key, fileName);
+		}).join();
 	}
 
-	private List<String> getListPropertiesProcess2(String key, String fileName) {
+	private static List<String> getListPropertiesProcess(String key, String fileName) {
 		List<String> ls = new ArrayList<String>();
-		setSecretList(readAllLines(fileName));
-		int ini = getByID("* " + key, fileName);
-		int ini2 = getByID("* endif " + key, fileName);
-
-		while (ini < ini2) {
-			if (!getSecretList().get(ini).equals("* " + key) || !getSecretList().get(ini2).equals("* endif " + key)) {
-				ls.add(getSecretList().get(ini).split(" - ")[1]);
-			}
+		try {
+			if (getSecretList() == null || getSecretList() != Files.readAllLines(Paths.get(fileName)))
+				setSecretList(Files.readAllLines(Paths.get(fileName)));
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		int ini = getByID("* " + key, fileName) + 1;
+		int ini2 = getByID("* endif " + key, fileName) - 1;
+		while (ini <= ini2) {
+			ls.add(getSecretList().get(ini).split(LIST_SPLITOR)[1]);
 			ini++;
 		}
 		return ls;
 	}
 
 	public static String getProperties(String key, String defaultValue, String file) {
-
-		CompletableFuture<String> result = new CompletableFuture<>();
-		Bukkit.getScheduler().runTaskAsynchronously(instance, () -> {
-			String proccess = getPropertiesProcess(key, defaultValue, file);
-			result.complete(proccess);
-		});
-
-		return result.join();
+		try {
+			return CompletableFuture.supplyAsync(() -> {
+				String process = getPropertiesProcess(key, defaultValue, file);
+				return process;
+			}).join();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return "NULL";
 	}
 
-	private static String getPropertiesProcess(String key, String defaultValue, String file) {
-
-		if (secretList == null) {
-			setSecretList(readAllLines(file));
+	private static String getPropertiesProcess(String key, String defaultValue, String fileName) {
+		try {
+			if (getSecretList() == null || getSecretList() != Files.readAllLines(Paths.get(fileName)))
+				setSecretList(Files.readAllLines(Paths.get(fileName)));
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
-		if (getSecretList() == null) {
+
+		if ((getSecretList().size() == 0)) {
 			return defaultValue;
 		}
-
-		String in_s = null;
-		String bef_in_s = null;
-		String gotten[] = null;
-		int i = 0;
-
-		while (i < secretList.size()) {
-
+		for (String i : getSecretList()) {
+			if (i.contains(key + SPLITOR)) {
+				String gotten[] = i.split(SPLITOR);
+				if (gotten.length == 2 && gotten[1] != null) {
+					String in_s = gotten[1];
+					String bef_in_s = gotten[0];
+					if (bef_in_s.equals(key)) {
+						return in_s;
+					}
+				} else {
+					return defaultValue;
+				}
+			}
 		}
-		gotten = secretList.get(i).split("@");
-
-		if (gotten.length < 3 && gotten[1] != null) {
-			in_s = null;
-			in_s = gotten[1];
-			bef_in_s = gotten[0];
-			return bef_in_s.equals(key) ? in_s : defaultValue;
-		}
-		return null;
+		return defaultValue;
 	}
 
 	public static boolean isNum(String str) {
-		CompletableFuture<Boolean> result = new CompletableFuture<Boolean>();
-		Bukkit.getScheduler().runTaskAsynchronously(instance, () -> {
-
-			char cstr[] = str.toCharArray();
-			int i = 0;
-
-			while (i < cstr.length) {
-				if (cstr[0] == '.') {
-					result.complete(false);
-					break;
-				}
-				if (cstr[i] == '.') {
-					continue;
-				}
-				if (Character.isDigit(cstr[i])) {
-					result.complete(false);
-					break;
-				}
-			}
-		});
-		return result.join() == false ? false : true;
+		return CompletableFuture.supplyAsync(() -> {
+			boolean process = isNumProcess(str);
+			return process;
+		}).join();
 	}
 
-	public void fakeFreeSecretList() {
+	private static boolean isNumProcess(String str) {
+		char cstr[] = str.toCharArray();
+		int i = 0;
+
+		while (i < cstr.length) {
+			if (cstr[0] == '.') {
+				return false;
+			}
+			if (cstr[i] == '.') {
+				continue;
+			} else if (cstr[i] == '.' && cstr[i + 1] == '.') {
+				return false;
+			}
+			if (Character.isDigit(cstr[i])) {
+				continue;
+			} else {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	public static void fakeFreeSecretList() {
 		secretList = null;
 	}
 
-	public void setProperties(String key, String value, String fileName) {
-		Bukkit.getScheduler().runTaskAsynchronously(instance, () -> {
-			if (Files.notExists(Paths.get(fileName))) {
-				try {
-					Files.createFile(Paths.get(fileName), attribute);
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			}
-			try (RandomAccessFile f = new RandomAccessFile(fileName, "rw");
-					FileWriter writer = new FileWriter(fileName)) {
-				if (readAllLines(fileName).contains(key + "@")) {
-					f.seek(new Integer(getByID(key + "@" + value, fileName)).byteValue());
-					f.writeBytes(key + "@" + value);
-				} else {
-					writer.write(key + "@" + value);
-					writer.flush();
-				}
-
-			} catch (IOException e) {
-				throw new IllegalStateException("problem with writing or reading or maybe file dosent exist\n" + e);
-			}
-		});
-	}
-
 }
+
