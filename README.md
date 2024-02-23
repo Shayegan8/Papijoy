@@ -7,9 +7,7 @@ also you can change getPropertiesList() splitor
 example@example
 <br>
 * anlist<br>
-0 - value1
-<br>
-1 - value2
-<br>
+0 - value1<br>
+1 - value2<br>
 * endif anlist
 
