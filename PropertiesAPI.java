@@ -694,9 +694,10 @@ public class PropertiesAPI {
 		});
 	}
 
-	public static List<String> getListProperties(String key, String fileName, String... defaultValues) {
+	public static List<String> getListProperties(boolean listChecker, String key, String fileName,
+			String... defaultValues) {
 		return CompletableFuture.supplyAsync(() -> {
-			if (getSecretList().size() == 0 && defaultValues != null) {
+			if (listChecker == true && getSecretList().size() == 0 && defaultValues != null) {
 				return Arrays.asList(defaultValues);
 			}
 
@@ -721,10 +722,10 @@ public class PropertiesAPI {
 		return ls;
 	}
 
-	public static String getProperties(String key, String defaultValue, String file) {
+	public static String getProperties(boolean listChecker, String key, String defaultValue, String file) {
 		try {
 			return CompletableFuture.supplyAsync(() -> {
-				String process = getPropertiesProcess(key, defaultValue, file);
+				String process = getPropertiesProcess(listChecker, key, defaultValue, file);
 				return process;
 			}).join();
 		} catch (Exception e) {
@@ -733,9 +734,10 @@ public class PropertiesAPI {
 		return "NULL";
 	}
 
-	private static String getPropertiesProcess(String key, String defaultValue, String fileName) {
+	private static String getPropertiesProcess(boolean listChecker, String key, String defaultValue, String fileName) {
 		try {
-			if (getSecretList() == null || getSecretList() != Files.readAllLines(Paths.get(fileName)))
+			if (listChecker == true && getSecretList() == null
+					|| getSecretList() != Files.readAllLines(Paths.get(fileName)))
 				setSecretList(Files.readAllLines(Paths.get(fileName)));
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -795,4 +797,3 @@ public class PropertiesAPI {
 	}
 
 }
-
