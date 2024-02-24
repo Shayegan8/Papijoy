@@ -617,13 +617,13 @@ public class PropertiesAPI {
 		secretList = ls;
 	}
 
-	public static int getByID(String str, String fileName) {
+	public static Integer getByID(String str, String fileName) {
 		return CompletableFuture.supplyAsync(() -> {
 			int n = 0;
-
+			List<String> ls = Files.readAllLines(Paths.get(fileName));
 			try {
-				while (n < Files.readAllLines(Paths.get(fileName)).size()) {
-					if (Files.readAllLines(Paths.get(fileName)).get(n).equalsIgnoreCase(str)) {
+				while (n < ls.size()) {
+					if (ls.get(n).equalsIgnoreCase(str)) {
 						return n;
 					}
 					n++;
@@ -631,7 +631,7 @@ public class PropertiesAPI {
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
-			return -1;
+			return null;
 		}).join();
 	}
 
