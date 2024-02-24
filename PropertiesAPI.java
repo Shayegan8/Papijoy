@@ -728,15 +728,15 @@ public class PropertiesAPI {
 		return getListPropertiesProcess(key, fileName);
 	}
 
-	public static List<String> getListProperties(boolean listChecker, String key, String fileName,
+	public static CompletableFuture<List<String>> getListProperties(boolean listChecker, String key, String fileName,
 			String... defaultValues) {
+		ValueGetter getter = new ValueGetter();
 		return CompletableFuture.supplyAsync(() -> {
 			if (listChecker == true && getSecretList().size() == 0 && defaultValues != null) {
 				return Arrays.asList(defaultValues);
 			}
-
 			return getListPropertiesProcess(key, fileName);
-		}).join();
+		});
 	}
 
 	private static List<String> getListPropertiesProcess(String key, String fileName) {
@@ -762,15 +762,16 @@ public class PropertiesAPI {
 	}
 
 	public static String getProperties(boolean listChecker, String key, String defaultValue, String file) {
+		ValueGetter getter = new ValueGetter();
 		try {
-			return CompletableFuture.supplyAsync(() -> {
+			CompletableFuture.runAsync(() -> {
 				String process = getPropertiesProcess(listChecker, key, defaultValue, file);
-				return process;
-			}).join();
+				getter.setValue(process);
+			});
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		return "NULL";
+		return getter.getValue();
 	}
 
 	private static String getPropertiesProcess(boolean listChecker, String key, String defaultValue, String fileName) {
@@ -814,15 +815,14 @@ public class PropertiesAPI {
 		int i = 0;
 
 		while (i < cstr.length) {
-			if (cstr[0] == '.') {
+			if (cstr[i] == '.' && cstr[i + 1] == '.') {
 				return false;
-			}
-			if (cstr[i] == '.') {
+			} else if (cstr[i] == '.') {
+				i++;
 				continue;
-			} else if (cstr[i] == '.' && cstr[i + 1] == '.') {
-				return false;
 			}
 			if (Character.isDigit(cstr[i])) {
+				i++;
 				continue;
 			} else {
 				return false;
@@ -836,4 +836,3 @@ public class PropertiesAPI {
 	}
 
 }
-
