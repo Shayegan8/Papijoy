@@ -617,13 +617,13 @@ public class PropertiesAPI {
 		secretList = ls;
 	}
 
-	public static Integer getByID(String str, String fileName) {
+	public static int getByID(String str, String fileName) {
 		return CompletableFuture.supplyAsync(() -> {
 			int n = 0;
-			List<String> ls = Files.readAllLines(Paths.get(fileName));
+
 			try {
-				while (n < ls.size()) {
-					if (ls.get(n).equalsIgnoreCase(str)) {
+				while (n < Files.readAllLines(Paths.get(fileName)).size()) {
+					if (Files.readAllLines(Paths.get(fileName)).get(n).equalsIgnoreCase(str)) {
 						return n;
 					}
 					n++;
@@ -631,7 +631,7 @@ public class PropertiesAPI {
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
-			return null;
+			return -1;
 		}).join();
 	}
 
@@ -660,6 +660,23 @@ public class PropertiesAPI {
 
 	}
 
+	public static void setListProperties_NS(String key, String fileName, List<String> args) {
+		int i = 0;
+
+		try (FileWriter writer = new FileWriter(fileName, true)) {
+			writer.write("\n" + "* " + key + "\n");
+			while (i < args.size()) {
+				writer.write(i + LIST_SPLITOR + args.get(i) + "\n");
+				writer.flush();
+				i++;
+			}
+			writer.write("* endif " + key);
+			writer.flush();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
 	public static void setListProperties(String key, String fileName, List<String> args) {
 		CompletableFuture.runAsync(() -> {
 
@@ -681,6 +698,15 @@ public class PropertiesAPI {
 		});
 	}
 
+	public static void setProperties_NS(String key, String value, String fileName) {
+		try (FileWriter writer = new FileWriter(fileName, true)) {
+			writer.write("\n" + key + SPLITOR + value + "\n");
+			writer.flush();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
 	public static void setProperties(String key, String value, String fileName) {
 		CompletableFuture.runAsync(() -> {
 
@@ -692,6 +718,14 @@ public class PropertiesAPI {
 			}
 
 		});
+	}
+
+	public static List<String> getListProperties_NS(boolean listChecker, String key, String fileName,
+			String... defaultValues) {
+		if (listChecker == true && getSecretList().size() == 0 && defaultValues != null) {
+			return Arrays.asList(defaultValues);
+		}
+		return getListPropertiesProcess(key, fileName);
 	}
 
 	public static List<String> getListProperties(boolean listChecker, String key, String fileName,
@@ -720,6 +754,11 @@ public class PropertiesAPI {
 			ini++;
 		}
 		return ls;
+	}
+
+	public static String getProperties_NS(boolean listChecker, String key, String defaultValue, String file) {
+		String process = getPropertiesProcess(listChecker, key, defaultValue, file);
+		return process;
 	}
 
 	public static String getProperties(boolean listChecker, String key, String defaultValue, String file) {
@@ -797,3 +836,4 @@ public class PropertiesAPI {
 	}
 
 }
+
