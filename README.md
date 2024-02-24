@@ -1,5 +1,4 @@
-Papijoy for bukkit plugins
-to use this file replace those instances with your plugin instance
+This is a api for managing your config files
 ## syntax
 the default splitor is @ you can change it 
 also you can change getPropertiesList() splitor
