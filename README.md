@@ -15,6 +15,8 @@ The issue is about CompletableFuture<?> methods<br>
 to use their result, for example you want check the property<br>
 you need something like this<br>
 
+https://github.com/Shayegan8/Papijoy/blob/09503357583f5374f2a6b8345dd85f434d15aa21/example.java#L1-L8
+
 above code will create a CompletableFuture<String> that inited by "ab" if the key wasn't exist else it will be the value with that key on that specific file<br>
 then we want to use that value, thenAccept blocks the main thread you need to use the Bukkit.getScheduler().getMainThreadExecutor() or like above code run it<br>
 asynchronously with bukkit scheduler and do your thing<br>
