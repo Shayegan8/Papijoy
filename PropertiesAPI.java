@@ -5,14 +5,15 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-
 import org.bukkit.Bukkit;
-import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.ChatColor;
+import org.bukkit.entity.Player;
+import org.bukkit.plugin.Plugin;
 
 /* 
  * @author shayegan8
- * 
  */
 public class PropertiesAPI {
 
@@ -28,35 +29,6 @@ public class PropertiesAPI {
 
 	public static void setSecretList(List<String> ls) {
 		secretList = ls;
-	}
-
-	public static int getByID(JavaPlugin instance, String str, String fileName) {
-		CompletableFuture<Integer> result = new CompletableFuture<Integer>();
-		ValueGetter getter = new ValueGetter();
-		Bukkit.getScheduler().runTaskAsynchronously(instance, () -> {
-			int n = 0;
-
-			try {
-				while (n < Files.readAllLines(Paths.get(fileName)).size()) {
-					if (Files.readAllLines(Paths.get(fileName)).get(n).equalsIgnoreCase(str)) {
-						result.complete(n);
-					}
-					n++;
-				}
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-			result.complete(-1);
-		});
-
-		result.exceptionally((exp) -> {
-			throw new IllegalStateException("A problem with complete()\n" + exp);
-		});
-
-		result.thenAccept((reslt) -> {
-			getter.setInt(reslt);
-		});
-		return getter.getInt();
 	}
 
 	public static int getByID_NS(String str, String fileName) {
@@ -79,7 +51,7 @@ public class PropertiesAPI {
 		return PropertiesAPI.alphabets;
 	}
 
-	public static void setListProperties(JavaPlugin instance, String key, String fileName, String... args) {
+	public static void setListProperties(Plugin instance, String key, String fileName, String... args) {
 		Bukkit.getScheduler().runTaskAsynchronously(instance, () -> {
 			int i = 0;
 
@@ -115,7 +87,7 @@ public class PropertiesAPI {
 		}
 	}
 
-	public static void setListProperties(JavaPlugin instance, String key, String fileName, List<String> args) {
+	public static void setListProperties(Plugin instance, String key, String fileName, List<String> args) {
 		Bukkit.getScheduler().runTaskAsynchronously(instance, () -> {
 
 			int i = 0;
@@ -145,7 +117,7 @@ public class PropertiesAPI {
 		}
 	}
 
-	public static void setProperties(JavaPlugin instance, String key, String value, String fileName) {
+	public static void setProperties(Plugin instance, String key, String value, String fileName) {
 		Bukkit.getScheduler().runTaskAsynchronously(instance, () -> {
 			try (FileWriter writer = new FileWriter(fileName, true)) {
 				writer.write("\n" + key + SPLITOR + value + "\n");
@@ -156,54 +128,69 @@ public class PropertiesAPI {
 		});
 	}
 
-	public static List<String> getListProperties_NS(boolean listChecker, String key, String fileName,
-			String... defaultValues) {
-		if (listChecker && getSecretList().size() == 0 && defaultValues != null) {
-			return Arrays.asList(defaultValues);
-		}
-		return getListPropertiesProcess_NS(key, fileName);
+	public static void showProperty(Player player, Plugin instance, String key, String defaultValue, String fileName) {
+		CompletableFuture<ValueGetter> result = CompletableFuture.supplyAsync(() -> {
+			String prc = getPropertiesProcess(key, defaultValue, fileName);
+			ValueGetter getter = new ValueGetter();
+			getter.setValue(prc);
+			return getter;
+		});
+
+		result.exceptionally(exp -> {
+			throw new IllegalStateException("Couldn't show property");
+		});
+
+		result.thenAccept((property) -> {
+			Bukkit.getScheduler().runTaskAsynchronously(instance, () -> {
+				player.sendMessage(ChatColor.translateAlternateColorCodes('&', property.getValue()));
+			});
+		});
 	}
 
-	public static List<String> getListProperties(JavaPlugin instance, boolean listChecker, String key, String fileName,
+	public static void showProperties(Player player, Plugin instance, String key, String fileName,
 			String... defaultValues) {
-		CompletableFuture<List<String>> result = new CompletableFuture<List<String>>();
-		ValueGetter getter = new ValueGetter();
-		Bukkit.getScheduler().runTaskAsynchronously(instance, () -> {
-			if (listChecker == true && getSecretList().size() == 0 && defaultValues != null) {
-				result.complete(Arrays.asList(defaultValues));
+		CompletableFuture<ValueGetter> result = CompletableFuture.supplyAsync(() -> {
+			ValueGetter getter = new ValueGetter();
+			if (getSecretList().size() == 0 && defaultValues != null) {
+				getter.setLValue(Arrays.asList(defaultValues));
+			} else {
+				List<String> prc = getListPropertiesProcess(key, fileName);
+				getter.setLValue(prc);
 			}
-			result.complete(getListPropertiesProcess(instance, key, fileName));
+			return getter;
 		});
 
-		result.exceptionally((x) -> {
-			throw new IllegalStateException("Problem with getListPropertiesProcess or complete()\n" + x);
+		result.exceptionally((exp) -> {
+			throw new IllegalStateException("Problem with showProperties\n" + exp);
 		});
 
-		result.thenAccept((reslt) -> {
-			getter.setLValue(reslt);
+		result.thenAccept((x) -> {
+			Bukkit.getScheduler().runTaskAsynchronously(instance, () -> {
+				for (String msg : x.getLValue()) {
+					player.sendMessage(ChatColor.translateAlternateColorCodes('&', msg));
+				}
+			});
 		});
-
-		return getter.getLValue();
 	}
 
-	private static List<String> getListPropertiesProcess(JavaPlugin instance, String key, String fileName) {
-		List<String> ls = new ArrayList<String>();
-		try {
-			if (getSecretList() == null || getSecretList() != Files.readAllLines(Paths.get(fileName)))
-				setSecretList(Files.readAllLines(Paths.get(fileName)));
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		int ini = getByID(instance, "* " + key, fileName) + 1;
-		int ini2 = getByID(instance, "* endif " + key, fileName) - 1;
-		while (ini <= ini2) {
-			ls.add(getSecretList().get(ini).split(LIST_SPLITOR)[1]);
-			ini++;
-		}
-		return ls;
+	public static CompletableFuture<List<String>> getProperties(String key, String fileName, String... defaultValues) {
+		CompletableFuture<List<String>> result = CompletableFuture.supplyAsync(() -> {
+			if (getSecretList().size() == 0 && defaultValues != null) {
+				return Arrays.asList(defaultValues);
+			}
+
+			return getListPropertiesProcess(key, fileName);
+
+		});
+
+		result.exceptionally((exp) -> {
+			throw new IllegalStateException("getListProperties() \n" + exp);
+		});
+
+		return result;
 	}
 
-	private static List<String> getListPropertiesProcess_NS(String key, String fileName) {
+	private static List<String> getListPropertiesProcess(String key, String fileName) {
 		List<String> ls = new ArrayList<String>();
 		try {
 			if (getSecretList() == null || getSecretList() != Files.readAllLines(Paths.get(fileName)))
@@ -220,27 +207,37 @@ public class PropertiesAPI {
 		return ls;
 	}
 
-	public static String getProperties(JavaPlugin instance, boolean listChecker, String key, String defaultValue,
-			String file) {
-		CompletableFuture<String> result = new CompletableFuture<String>();
-		ValueGetter getter = new ValueGetter();
-		Bukkit.getScheduler().runTaskAsynchronously(instance, () -> {
-			result.complete(getPropertiesProcess(listChecker, key, defaultValue, file));
+	public static CompletableFuture<String> getProperty(String key, String defaultValue, String fileName) {
+		CompletableFuture<String> future = CompletableFuture.supplyAsync(() -> {
+			try {
+				if (getSecretList() == null || getSecretList() != Files.readAllLines(Paths.get(fileName)))
+					setSecretList(Files.readAllLines(Paths.get(fileName)));
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+
+			if ((getSecretList().size() == 0)) {
+				return defaultValue;
+			}
+
+			Optional<String> retrn = getSecretList().stream()
+					.filter(x -> x.contains(key + SPLITOR) && x.split(SPLITOR).length == 2).findAny();
+			if (retrn.isPresent()) {
+				return retrn.get().split(SPLITOR)[1];
+			} else {
+				return defaultValue;
+			}
 		});
 
-		result.exceptionally((x) -> {
-			throw new IllegalStateException("Problem with getPropertiesProcess or complete()\n" + x);
+		future.exceptionally((exp) -> {
+			throw new IllegalStateException("Problem with getProperty()\n" + exp);
 		});
-
-		result.thenAccept(r -> {
-			getter.setValue(r);
-		});
-		return getter.getValue();
+		return future;
 	}
 
-	private static String getPropertiesProcess(boolean listChecker, String key, String defaultValue, String fileName) {
+	private static String getPropertiesProcess(String key, String defaultValue, String fileName) {
 		try {
-			if (listChecker && getSecretList() == null || getSecretList() != Files.readAllLines(Paths.get(fileName)))
+			if (getSecretList() == null || getSecretList() != Files.readAllLines(Paths.get(fileName)))
 				setSecretList(Files.readAllLines(Paths.get(fileName)));
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -254,10 +251,7 @@ public class PropertiesAPI {
 				String gotten[] = i.split(SPLITOR);
 				if (gotten.length == 2 && gotten[1] != null) {
 					String in_s = gotten[1];
-					String bef_in_s = gotten[0];
-					if (bef_in_s.equals(key)) {
-						return in_s;
-					}
+					return in_s;
 				} else {
 					return defaultValue;
 				}
@@ -270,42 +264,5 @@ public class PropertiesAPI {
 		secretList = null;
 	}
 
-	public static boolean isNum(JavaPlugin instance, String str) {
-		CompletableFuture<Boolean> result = new CompletableFuture<Boolean>();
-		ValueGetter getter = new ValueGetter();
-		Bukkit.getScheduler().runTaskAsynchronously(instance, () -> {
-			result.complete(isNumProcess(str));
-		});
-
-		result.exceptionally((x) -> {
-			throw new IllegalStateException("Problem with isNumberProcess or complete()\n" + x);
-		});
-
-		result.thenAccept((reslt) -> {
-			getter.setBoolean(reslt);
-		});
-
-		return getter.getBoolean();
-	}
-
-	private static boolean isNumProcess(String str) {
-		int i = 0;
-
-		while (i < str.toCharArray().length) {
-			if (str.charAt(i) == '.' && str.charAt(i + 1) == '.') {
-				return false;
-			} else if (str.charAt(i) == '.') {
-				i++;
-				continue;
-			}
-			if (Character.isDigit(str.charAt(i))) {
-				i++;
-				continue;
-			} else {
-				return false;
-			}
-		}
-		return true;
-	}
-
 }
+
