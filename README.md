@@ -17,9 +17,12 @@ you need something like this<br>
 
 
 PropertiesAPI.getProperty("kir", "ab", file).thenAccept((x) -> {<br>
-			Bukkit.getScheduler().runTaskAsynchronously(this, () -> {<br>
-				System.out.println(x);<br>
-			});<br>
+			<br>Bukkit.getScheduler().runTaskAsynchronously(this, () -> {<br>
+				<br>if(x != "ab")
+					//do something
+				<br>else
+					// do something
+			<br>});<br>
 		});<br>
 above code will create a CompletableFuture<String> that inited by "ab" if the key wasn't exist else it will be the value with that key on that specific file<br>
 then we want to use that value, thenAccept blocks the main thread you need to use the Bukkit.getScheduler().getMainThreadExecutor() or like above code run it<br>
