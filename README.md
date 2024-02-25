@@ -12,7 +12,7 @@ example@example
 
 ## Usage
 The issue is about CompletableFuture<?> methods<br>
-to use their result, for example you want show the property to console<br>
+to use their result, for example you want check the property<br>
 you need something like this<br>
 
 
