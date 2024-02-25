@@ -52,8 +52,18 @@ public class PropertiesAPI {
 		return PropertiesAPI.alphabets;
 	}
 
-	public static void setProperties(Plugin instance, String key, String fileName, String... args) {
+	public static void setProperties(Plugin instance, boolean check, String key, String fileName, String... args) {
 		Bukkit.getScheduler().runTaskAsynchronously(instance, () -> {
+			if (check) {
+				if (Files.notExists(Paths.get(fileName))) {
+					try {
+						Files.createFile(Paths.get(fileName));
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+				}
+			}
+
 			int i = 0;
 
 			try (FileWriter writer = new FileWriter(fileName, true)) {
@@ -71,7 +81,17 @@ public class PropertiesAPI {
 		});
 	}
 
-	public static void setProperties_NS(String key, String fileName, List<String> args) {
+	public static void setProperties_NS(String key, boolean check, String fileName, List<String> args) {
+		if (check) {
+			if (Files.notExists(Paths.get(fileName))) {
+				try {
+					Files.createFile(Paths.get(fileName));
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+
 		int i = 0;
 
 		try (FileWriter writer = new FileWriter(fileName, true)) {
@@ -88,8 +108,17 @@ public class PropertiesAPI {
 		}
 	}
 
-	public static void setProperties(Plugin instance, String key, String fileName, List<String> args) {
+	public static void setProperties(Plugin instance, boolean check, String key, String fileName, List<String> args) {
 		Bukkit.getScheduler().runTaskAsynchronously(instance, () -> {
+			if (check) {
+				if (Files.notExists(Paths.get(fileName))) {
+					try {
+						Files.createFile(Paths.get(fileName));
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+				}
+			}
 
 			int i = 0;
 
@@ -118,8 +147,17 @@ public class PropertiesAPI {
 		}
 	}
 
-	public static void setProperty(Plugin instance, String key, String value, String fileName) {
+	public static void setProperty(Plugin instance, boolean check, String key, String value, String fileName) {
 		Bukkit.getScheduler().runTaskAsynchronously(instance, () -> {
+			if (check) {
+				if (Files.notExists(Paths.get(fileName))) {
+					try {
+						Files.createFile(Paths.get(fileName));
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+				}
+			}
 			try (FileWriter writer = new FileWriter(fileName, true)) {
 				writer.write("\n" + key + SPLITOR + value + "\n");
 				writer.flush();
@@ -226,15 +264,17 @@ public class PropertiesAPI {
 		return ls;
 	}
 
-	public static CompletableFuture<String> getProperty(String key, String defaultValue, String fileName) {
+	public static CompletableFuture<String> getProperty(boolean check, String key, String defaultValue,
+			String fileName) {
 		CompletableFuture<String> future = CompletableFuture.supplyAsync(() -> {
-			try {
-				if (getSecretList() == null || getSecretList() != Files.readAllLines(Paths.get(fileName)))
-					setSecretList(Files.readAllLines(Paths.get(fileName)));
-			} catch (IOException e) {
-				e.printStackTrace();
+			if (check) {
+				try {
+					if (getSecretList() == null || getSecretList() != Files.readAllLines(Paths.get(fileName)))
+						setSecretList(Files.readAllLines(Paths.get(fileName)));
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
 			}
-
 			if ((getSecretList().size() == 0)) {
 				return defaultValue;
 			}
