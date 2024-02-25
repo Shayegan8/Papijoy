@@ -14,6 +14,7 @@ import org.bukkit.plugin.Plugin;
 
 /* 
  * @author shayegan8
+ * 
  */
 public class PropertiesAPI {
 
@@ -51,7 +52,7 @@ public class PropertiesAPI {
 		return PropertiesAPI.alphabets;
 	}
 
-	public static void setListProperties(Plugin instance, String key, String fileName, String... args) {
+	public static void setProperties(Plugin instance, String key, String fileName, String... args) {
 		Bukkit.getScheduler().runTaskAsynchronously(instance, () -> {
 			int i = 0;
 
@@ -70,7 +71,7 @@ public class PropertiesAPI {
 		});
 	}
 
-	public static void setListProperties_NS(String key, String fileName, List<String> args) {
+	public static void setProperties_NS(String key, String fileName, List<String> args) {
 		int i = 0;
 
 		try (FileWriter writer = new FileWriter(fileName, true)) {
@@ -87,7 +88,7 @@ public class PropertiesAPI {
 		}
 	}
 
-	public static void setListProperties(Plugin instance, String key, String fileName, List<String> args) {
+	public static void setProperties(Plugin instance, String key, String fileName, List<String> args) {
 		Bukkit.getScheduler().runTaskAsynchronously(instance, () -> {
 
 			int i = 0;
@@ -108,7 +109,7 @@ public class PropertiesAPI {
 		});
 	}
 
-	public static void setProperties_NS(String key, String value, String fileName) {
+	public static void setProperty_NS(String key, String value, String fileName) {
 		try (FileWriter writer = new FileWriter(fileName, true)) {
 			writer.write("\n" + key + SPLITOR + value + "\n");
 			writer.flush();
@@ -117,7 +118,7 @@ public class PropertiesAPI {
 		}
 	}
 
-	public static void setProperties(Plugin instance, String key, String value, String fileName) {
+	public static void setProperty(Plugin instance, String key, String value, String fileName) {
 		Bukkit.getScheduler().runTaskAsynchronously(instance, () -> {
 			try (FileWriter writer = new FileWriter(fileName, true)) {
 				writer.write("\n" + key + SPLITOR + value + "\n");
@@ -177,6 +178,24 @@ public class PropertiesAPI {
 		CompletableFuture<List<String>> result = CompletableFuture.supplyAsync(() -> {
 			if (getSecretList().size() == 0 && defaultValues != null) {
 				return Arrays.asList(defaultValues);
+			}
+
+			return getListPropertiesProcess(key, fileName);
+
+		});
+
+		result.exceptionally((exp) -> {
+			throw new IllegalStateException("getListProperties() \n" + exp);
+		});
+
+		return result;
+	}
+
+	public static CompletableFuture<List<String>> getProperties(String key, String fileName,
+			List<String> defaultValues) {
+		CompletableFuture<List<String>> result = CompletableFuture.supplyAsync(() -> {
+			if (getSecretList().size() == 0 && defaultValues != null) {
+				return defaultValues;
 			}
 
 			return getListPropertiesProcess(key, fileName);
