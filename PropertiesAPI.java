@@ -151,6 +151,8 @@ public class PropertiesAPI {
 		try (FileWriter writer = new FileWriter(fileName, true)) {
 			writer.write("\n" + "* " + key + "\n");
 			while (i < args.length) {
+				if (args[i] == null)
+					continue;
 				writer.write(i + LIST_SPLITOR + args[i] + "\n");
 				writer.flush();
 				i++;
@@ -167,6 +169,8 @@ public class PropertiesAPI {
 		try (FileWriter writer = new FileWriter(fileName, true)) {
 			writer.write("\n" + "* " + key + "\n");
 			while (i < args.size()) {
+				if (args.get(i) == null)
+					continue;
 				writer.write(i + LIST_SPLITOR + args.get(i) + "\n");
 				writer.flush();
 				i++;
