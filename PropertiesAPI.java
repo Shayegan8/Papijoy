@@ -7,6 +7,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+
+import javax.annotation.Nullable;
+
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
@@ -20,8 +23,8 @@ public class PropertiesAPI {
 
 	private static String alphabets[] = { "a", "b", "c", "d", "e", "f", "g", "h", "i", "k", "j", "l", "m", "n", "o",
 			"p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z" };
-	private static final String SPLITOR = "@";
-	private static final String LIST_SPLITOR = " - ";
+	public static final String SPLITOR = "@";
+	public static final String LIST_SPLITOR = " - ";
 
 	public static int getByID_NS(String str, String fileName) {
 		int n = 0;
@@ -510,4 +513,3 @@ public class PropertiesAPI {
 	}
 
 }
-
