@@ -220,10 +220,13 @@ public class PropertiesAPI {
 		List<String> allLines = null;
 		try {
 			allLines = Files.readAllLines(Paths.get(fileName));
+			if (allLines == null || allLines.size() == 0) {
+				allLines = new ArrayList<>();
+			}
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		if (allLines.contains(key + SPLITOR + value)) {
+		if (allLines != null && allLines.contains(key + SPLITOR + value)) {
 			int ini = getByID_NS(key + SPLITOR + value, fileName);
 			removeProperty_NS(allLines.get(ini), fileName);
 			setPropertyProcess(key, value, fileName);
@@ -335,7 +338,7 @@ public class PropertiesAPI {
 			if (allLines.size() == 0 && defaultValues != null) {
 				getter.setLValue(Arrays.asList(defaultValues));
 			} else {
-				List<String> prc = getListPropertiesProcess(key, fileName);
+				List<String> prc = getListPropertiesProcess(key, fileName, allLines);
 				getter.setLValue(prc);
 			}
 			return getter;
@@ -366,7 +369,7 @@ public class PropertiesAPI {
 				return Arrays.asList(defaultValues);
 			}
 
-			return getListPropertiesProcess(key, fileName);
+			return getListPropertiesProcess(key, fileName, allLines, defaultValues);
 
 		});
 
@@ -390,7 +393,7 @@ public class PropertiesAPI {
 				return defaultValues;
 			}
 
-			return getListPropertiesProcess(key, fileName);
+			return getListPropertiesProcess(key, fileName, allLines, defaultValues);
 
 		});
 
@@ -411,29 +414,31 @@ public class PropertiesAPI {
 		if (allLines.size() == 0 && defaultValues != null) {
 			return defaultValues;
 		}
-		return getListPropertiesProcess(key, fileName);
+		return getListPropertiesProcess(key, fileName, allLines, defaultValues);
 	}
 
 	public static List<String> getProperties_NNS(String key, String fileName, String... defaultValues) {
 		List<String> allLines = null;
+		System.out.println(1);
 		try {
 			allLines = Files.readAllLines(Paths.get(fileName));
+			if (allLines == null) {
+				allLines = new ArrayList<>();
+			}
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		if (allLines.size() == 0 && defaultValues != null) {
+		System.out.println(2);
+		if (allLines != null && allLines.size() == 0 && defaultValues != null) {
 			return Arrays.asList(defaultValues);
 		}
-		return getListPropertiesProcess(key, fileName);
+		System.out.println(3);
+		return getListPropertiesProcess(key, fileName, allLines, defaultValues);
 	}
 
-	private static List<String> getListPropertiesProcess(String key, String fileName) {
-		List<String> allLines = null;
-		try {
-			allLines = Files.readAllLines(Paths.get(fileName));
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+	private static List<String> getListPropertiesProcess(String key, String fileName, List<String> allLines,
+			String... defaultValues) {
+
 		List<String> ls = new ArrayList<String>();
 		int ini = getByID_NS("* " + key, fileName) + 1;
 		int ini2 = getByID_NS("* endif " + key, fileName) - 1;
@@ -441,6 +446,27 @@ public class PropertiesAPI {
 			ls.add(allLines.get(ini).split(LIST_SPLITOR)[1]);
 			ini++;
 		}
+		if (ls.size() == 0 || ls == null) {
+			return Arrays.asList(defaultValues);
+		}
+
+		return ls;
+	}
+
+	private static List<String> getListPropertiesProcess(String key, String fileName, List<String> allLines,
+			List<String> defaultValues) {
+
+		List<String> ls = new ArrayList<String>();
+		int ini = getByID_NS("* " + key, fileName) + 1;
+		int ini2 = getByID_NS("* endif " + key, fileName) - 1;
+		while (ini <= ini2) {
+			ls.add(allLines.get(ini).split(LIST_SPLITOR)[1]);
+			ini++;
+		}
+		if (ls.size() == 0 || ls == null) {
+			return defaultValues;
+		}
+
 		return ls;
 	}
 
