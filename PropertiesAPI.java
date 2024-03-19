@@ -4,9 +4,11 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentSkipListSet;
 
 import javax.annotation.Nullable;
 
@@ -14,6 +16,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
+import org.bukkit.plugin.java.JavaPlugin;
 
 /* 
  * @author shayegan8
@@ -380,6 +383,22 @@ public class PropertiesAPI {
 		return result;
 	}
 
+	public static ConcurrentSkipListSet<String> getProperties_C(JavaPlugin instance, String key, String fileName,
+			String... defaultValues) {
+		ConcurrentSkipListSet<String> lsls = new ConcurrentSkipListSet<>();
+		try {
+
+			lsls = new ConcurrentSkipListSet<>(Files.readAllLines(Paths.get(fileName)));
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		if (lsls.size() == 0 && defaultValues != null) {
+			return new ConcurrentSkipListSet<>(Arrays.asList(defaultValues));
+		}
+
+		return getListPropertiesProcess(instance, key, fileName, lsls, defaultValues);
+	}
+
 	public static CompletableFuture<List<String>> getProperties(String key, String fileName,
 			List<String> defaultValues) {
 		CompletableFuture<List<String>> result = CompletableFuture.supplyAsync(() -> {
@@ -453,6 +472,64 @@ public class PropertiesAPI {
 		return ls;
 	}
 
+	public static CompletableFuture<List<String>> reader(String fileName) {
+		CompletableFuture<List<String>> future = CompletableFuture.supplyAsync(() -> {
+			try {
+				return Files.readAllLines(Paths.get(fileName));
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			return null;
+		});
+		future.handle((result, exp) -> {
+			if (result == null) {
+				throw new IllegalStateException(Arrays.toString(exp.getStackTrace()));
+			} else {
+				exp.printStackTrace();
+				throw new IllegalStateException("Problem with reading");
+			}
+		});
+		return null;
+	}
+
+	public static int getIntByString(ConcurrentSkipListSet<String> lines, String str) {
+		Optional<String> value = lines.stream().filter((x) -> x.equals(str)).findFirst();
+		if (value.isPresent()) {
+			List<String> ls = new ArrayList<>(lines);
+			return ls.indexOf(value.get());
+		}
+		return -1;
+	}
+
+	public static ConcurrentSkipListSet<String> getListPropertiesProcess(JavaPlugin instance, String key,
+			String fileName, ConcurrentSkipListSet<String> allLines, String... defaultValues) {
+
+		ConcurrentSkipListSet<String> ls = new ConcurrentSkipListSet<String>();
+		Iterator<String> iterate = allLines.iterator();
+		while (iterate.hasNext()) {
+			reader(fileName).thenAccept((x) -> {
+				Bukkit.getScheduler().runTaskAsynchronously(instance, () -> {
+					String firstString;
+					firstString = iterate.next();
+					if (firstString.equals(x.get(getIntByString(allLines, "* " + key)))) {
+						String storedFirstString = firstString;
+						while (getIntByString(allLines, storedFirstString) < getIntByString(allLines,
+								"* endif " + key)) {
+							ls.add(iterate.next().split(LIST_SPLITOR)[1]);
+						}
+					}
+
+				});
+			});
+		}
+
+		if (ls.size() == 0 || ls == null) {
+			return new ConcurrentSkipListSet<>(Arrays.asList(defaultValues));
+		}
+
+		return ls;
+	}
+
 	private static List<String> getListPropertiesProcess(String key, String fileName, List<String> allLines,
 			List<String> defaultValues) {
 
@@ -496,6 +573,27 @@ public class PropertiesAPI {
 			throw new IllegalStateException("Problem with getProperty()\n" + exp);
 		});
 		return future;
+	}
+
+	public static String getProperty_C(String key, String defaultValue, String fileName) {
+		ConcurrentSkipListSet<String> cLines = null;
+		try {
+			cLines = new ConcurrentSkipListSet<>(Files.readAllLines(Paths.get(fileName)));
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		if (cLines.size() == 0 || cLines == null) {
+			return defaultValue;
+		}
+
+		Optional<String> retrn = cLines.stream().filter(x -> x.contains(key + SPLITOR) && x.split(SPLITOR).length == 2)
+				.findAny();
+		if (retrn.isPresent()) {
+			return retrn.get().split(SPLITOR)[1];
+		} else {
+			return defaultValue;
+		}
 	}
 
 	public static String getProperty_NS(String key, String defaultValue, String fileName) {
