@@ -553,10 +553,12 @@ public class PropertiesAPI {
 			try {
 				lines = Files.readAllLines(Paths.get(fileName));
 			} catch (IOException e) {
-				e.printStackTrace();
+				lines = null;
 			}
 
-			if ((lines.size() == 0)) {
+			if (lines == null) {
+				return defaultValue;
+			} else if ((lines.size() == 0)) {
 				return defaultValue;
 			}
 
@@ -580,10 +582,12 @@ public class PropertiesAPI {
 		try {
 			cLines = new ConcurrentSkipListSet<>(Files.readAllLines(Paths.get(fileName)));
 		} catch (IOException e) {
-			e.printStackTrace();
+			cLines = null;
 		}
 
-		if (cLines.size() == 0 || cLines == null) {
+		if (cLines == null) {
+			return defaultValue;
+		} else if (cLines.size() == 0) {
 			return defaultValue;
 		}
 
