@@ -16,7 +16,6 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
-import org.bukkit.plugin.java.JavaPlugin;
 
 import com.google.common.collect.ImmutableList;
 
@@ -26,8 +25,8 @@ import com.google.common.collect.ImmutableList;
  */
 public class PropertiesAPI {
 
-	private static String alphabets[] = { "a", "b", "c", "d", "e", "f", "g", "h", "i", "k", "j", "l", "m", "n", "o",
-			"p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z" };
+	public static String alphabets[] = { "a", "b", "c", "d", "e", "f", "g", "h", "i", "k", "j", "l", "m", "n", "o", "p",
+			"q", "r", "s", "t", "u", "v", "w", "x", "y", "z" };
 	public static final String SPLITOR = "@";
 	public static final String LIST_SPLITOR = " - ";
 
@@ -395,8 +394,7 @@ public class PropertiesAPI {
 		return result;
 	}
 
-	public static ConcurrentSkipListSet<String> getProperties_C(JavaPlugin instance, String key, String fileName,
-			String... defaultValues) {
+	public static ConcurrentSkipListSet<String> getProperties_C(String key, String fileName, String... defaultValues) {
 		ConcurrentSkipListSet<String> lsls = new ConcurrentSkipListSet<>();
 		try {
 
@@ -409,7 +407,7 @@ public class PropertiesAPI {
 		}
 
 		try {
-			return getListPropertiesProcess(instance, key, fileName, lsls, defaultValues);
+			return bgetListPropertiesProcess(key, fileName, lsls, defaultValues);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -518,8 +516,8 @@ public class PropertiesAPI {
 		return -1;
 	}
 
-	public static ConcurrentSkipListSet<String> getListPropertiesProcess(JavaPlugin instance, String key,
-			String fileName, ConcurrentSkipListSet<String> allLines, String... defaultValues) throws IOException {
+	public static ConcurrentSkipListSet<String> bgetListPropertiesProcess(String key, String fileName,
+			ConcurrentSkipListSet<String> allLines, String... defaultValues) throws IOException {
 
 		ConcurrentSkipListSet<String> ls = new ConcurrentSkipListSet<>();
 		ImmutableList<String> imm = ImmutableList.copyOf(allLines);
@@ -534,9 +532,41 @@ public class PropertiesAPI {
 					if (currentLine.equals(storedFirstString)) {
 						while (getIntByString(allLines, storedFirstString) < getIntByString(allLines,
 								"* endif " + key)) {
-							Bukkit.getScheduler().runTaskAsynchronously(instance, () -> {
-								ls.add(currentLine.split(LIST_SPLITOR)[1]);
-							});
+							ls.add(currentLine.split(LIST_SPLITOR)[1]);
+							if (!iterate.hasNext()) {
+								break;
+							}
+							storedFirstString = iterate.next();
+						}
+					}
+				}
+			}
+		}
+
+		if (ls.isEmpty()) {
+			return new ConcurrentSkipListSet<>(Arrays.asList(defaultValues));
+		}
+
+		return ls;
+	}
+
+	public static ConcurrentSkipListSet<String> getListPropertiesProcess(String key, String fileName,
+			ConcurrentSkipListSet<String> allLines, String... defaultValues) throws IOException {
+
+		ConcurrentSkipListSet<String> ls = new ConcurrentSkipListSet<>();
+		ImmutableList<String> imm = ImmutableList.copyOf(allLines);
+		List<String> linesToProcess = new ArrayList<>(imm);
+
+		for (String line : linesToProcess) {
+			if (line.equals(imm.get(getIntByString(allLines, "* " + key)))) {
+				String storedFirstString = line;
+				Iterator<String> iterate = allLines.iterator();
+				while (iterate.hasNext()) {
+					String currentLine = iterate.next();
+					if (currentLine.equals(storedFirstString)) {
+						while (getIntByString(allLines, storedFirstString) < getIntByString(allLines,
+								"* endif " + key)) {
+							ls.add(currentLine.split(LIST_SPLITOR)[1]);
 							if (!iterate.hasNext()) {
 								break;
 							}
