@@ -78,7 +78,8 @@ public class PropertiesAPI {
 			}
 		});
 	}
-
+	
+	
 	public static void setProperties_NS(String key, boolean check, String fileName, List<String> args) {
 		List<String> allLines = null;
 		if (check) {
@@ -371,6 +372,7 @@ public class PropertiesAPI {
 		});
 	}
 
+	@Deprecated
 	public static CompletableFuture<List<String>> getProperties(String key, String fileName, String... defaultValues) {
 		CompletableFuture<List<String>> result = CompletableFuture.supplyAsync(() -> {
 			List<String> allLines = null;
@@ -601,6 +603,7 @@ public class PropertiesAPI {
 		return ls;
 	}
 
+	@Deprecated
 	public static CompletableFuture<String> getProperty(String key, String defaultValue, String fileName) {
 		CompletableFuture<String> future = CompletableFuture.supplyAsync(() -> {
 			List<String> lines = null;
@@ -654,6 +657,7 @@ public class PropertiesAPI {
 		}
 	}
 
+	@Deprecated
 	public static String getProperty_NS(String key, String defaultValue, String fileName) {
 		List<String> lines = null;
 		try {
