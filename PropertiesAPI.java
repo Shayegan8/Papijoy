@@ -15,6 +15,8 @@ import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 
+import me.clip.placeholderapi.PlaceholderAPI;
+
 /* 
  * @author shayegan8
  * 
@@ -146,15 +148,19 @@ public class PropertiesAPI {
 	}
 
 	public static void showProperty(Player player, Plugin instance, String key, String defaultValue, String fileName) {
-		player.sendMessage(ChatColor.translateAlternateColorCodes('&', getProperty(key, defaultValue, fileName)));
+		String property = PlaceholderAPI.setPlaceholders(player,
+				ChatColor.translateAlternateColorCodes('&', getProperty(key, defaultValue, fileName)));
+		player.sendMessage(property);
 	}
 
 	public static void showProperties(Player player, Plugin instance, String key, String fileName,
 			String... defaultValues) throws IOException {
 
 		ConcurrentLinkedQueue<String> lsk = new ConcurrentLinkedQueue<>(Files.readAllLines(Paths.get(fileName)));
-		bgetListPropertiesProcess(key, fileName, lsk, defaultValues).stream().forEach((x) -> {
-			player.sendMessage(x);
+		bgetListPropertiesProcess(null, key, fileName, lsk, defaultValues).stream().forEach((x) -> {
+			String property = PlaceholderAPI.setPlaceholders(player,
+					ChatColor.translateAlternateColorCodes('&', getProperty(key, x, fileName)));
+			player.sendMessage(property);
 		});
 
 	}
@@ -195,7 +201,7 @@ public class PropertiesAPI {
 		try {
 			ConcurrentLinkedQueue<String> lsls = new ConcurrentLinkedQueue<>(Files.readAllLines(Paths.get(fileName)));
 
-			return bgetListPropertiesProcess(key, fileName, lsls, defaultValues);
+			return bgetListPropertiesProcess(null, key, fileName, lsls, defaultValues);
 
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -203,8 +209,22 @@ public class PropertiesAPI {
 
 		return null;
 	}
-	
-	public static ConcurrentLinkedQueue<String> bgetListPropertiesProcess(String key, String fileName,
+
+	public static ConcurrentLinkedQueue<String> getProperties(final char splitor[], String key, String fileName,
+			String... defaultValues) {
+		try {
+			ConcurrentLinkedQueue<String> lsls = new ConcurrentLinkedQueue<>(Files.readAllLines(Paths.get(fileName)));
+
+			return bgetListPropertiesProcess(new String(splitor), key, fileName, lsls, defaultValues);
+
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		return null;
+	}
+
+	public static ConcurrentLinkedQueue<String> bgetListPropertiesProcess(String splitor, String key, String fileName,
 			ConcurrentLinkedQueue<String> allLines, String... defaultValues) throws IOException {
 		final CopyOnWriteArrayList<String> ls = new CopyOnWriteArrayList<>(allLines);
 		ConcurrentLinkedQueue<String> lsi = new ConcurrentLinkedQueue<>();
@@ -228,7 +248,8 @@ public class PropertiesAPI {
 			}
 		});
 
-		return new ConcurrentLinkedQueue<>(lsi.stream().map((x) -> x.split(" - ")[1]).collect(Collectors.toList()));
+		return new ConcurrentLinkedQueue<>(
+				lsi.stream().map((x) -> x.split(splitor != null ? splitor : " - ")[1]).collect(Collectors.toList()));
 	}
 
 }
